@@ -3,15 +3,19 @@ import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.File;
+import java.util.HashMap;
+import java.util.Map;
 
 public class Main {
+    private static Map<String, String> photoMap = new HashMap<>();
+
     public static void main(String[] args) {
         JFrame frame = new JFrame("Информация о самолетах");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setSize(500, 400);
         frame.setLayout(new GridBagLayout());
 
-        // Загрузка и изменение размера логотипа
         ImageIcon logoIcon = new ImageIcon("img/sut-logo.png");
         Image logoImage = logoIcon.getImage().getScaledInstance(250, 100, Image.SCALE_SMOOTH);
         JLabel logoLabel = new JLabel(new ImageIcon(logoImage));
@@ -36,7 +40,7 @@ public class Main {
             public void actionPerformed(ActionEvent e) {
                 String selectedModel = (String) samolyotComboBox.getSelectedItem();
                 Samolyot samolyot = createSamolyot(selectedModel);
-                showInfoDialog(frame, samolyot.informatsiya());
+                showInfoDialog(frame, samolyot.informatsiya(), photoMap.get(selectedModel));
             }
         });
 
@@ -45,7 +49,7 @@ public class Main {
             public void actionPerformed(ActionEvent e) {
                 String selectedModel = (String) bombardirovshikComboBox.getSelectedItem();
                 Bombardirovshik bombardirovshik = createBombardirovshik(selectedModel);
-                showInfoDialog(frame, bombardirovshik.informatsiya());
+                showInfoDialog(frame, bombardirovshik.informatsiya(), photoMap.get(selectedModel));
             }
         });
 
@@ -54,7 +58,7 @@ public class Main {
             public void actionPerformed(ActionEvent e) {
                 String selectedModel = (String) istrebitelComboBox.getSelectedItem();
                 Istrebitel istrebitel = createIstrebitel(selectedModel);
-                showInfoDialog(frame, istrebitel.informatsiya());
+                showInfoDialog(frame, istrebitel.informatsiya(), photoMap.get(selectedModel));
             }
         });
 
@@ -64,6 +68,28 @@ public class Main {
         buttonPanel.add(buttonBombardirovshik);
         buttonPanel.add(istrebitelComboBox);
         buttonPanel.add(buttonIstrebitel);
+
+        JButton buttonAddPhoto = createStyledButton("Добавить фото");
+        buttonAddPhoto.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                String[] allModels = new String[samolyotModels.length + bombardirovshikModels.length + istrebitelModels.length];
+                System.arraycopy(samolyotModels, 0, allModels, 0, samolyotModels.length);
+                System.arraycopy(bombardirovshikModels, 0, allModels, samolyotModels.length, bombardirovshikModels.length);
+                System.arraycopy(istrebitelModels, 0, allModels, samolyotModels.length + bombardirovshikModels.length, istrebitelModels.length);
+
+                String selectedModel = (String) JOptionPane.showInputDialog(frame, "Выберите модель самолета:", "Выбор модели", JOptionPane.QUESTION_MESSAGE, null, allModels, allModels[0]);
+                if (selectedModel != null) {
+                    JFileChooser fileChooser = new JFileChooser();
+                    fileChooser.setCurrentDirectory(new File("img"));
+                    int result = fileChooser.showOpenDialog(frame);
+                    if (result == JFileChooser.APPROVE_OPTION) {
+                        File selectedFile = fileChooser.getSelectedFile();
+                        photoMap.put(selectedModel, selectedFile.getAbsolutePath());
+                    }
+                }
+            }
+        });
 
         // Создание и настройка JLabel для имени, фамилии и группы
         JLabel nameLabel = new JLabel("Хоризонов Серафим, ИКПИ-21");
@@ -83,6 +109,11 @@ public class Main {
         frame.add(buttonPanel, gbc);
 
         gbc.gridy = 2;
+        gbc.weighty = 0.0;
+        gbc.anchor = GridBagConstraints.SOUTH;
+        frame.add(buttonAddPhoto, gbc);
+
+        gbc.gridy = 3;
         gbc.weighty = 0.0;
         gbc.anchor = GridBagConstraints.SOUTH;
         frame.add(nameLabel, gbc);
@@ -140,14 +171,42 @@ public class Main {
         }
     }
 
-    private static void showInfoDialog(JFrame parent, String info) {
+    private static void showInfoDialog(JFrame parent, String info, String photoPath) {
         JDialog dialog = new JDialog(parent, "Информация", true);
-        dialog.setSize(300, 200);
         dialog.setLayout(new BorderLayout());
 
         JTextArea textArea = new JTextArea(info);
         textArea.setEditable(false);
         dialog.add(new JScrollPane(textArea), BorderLayout.CENTER);
+
+        if (photoPath != null) {
+            ImageIcon photoIcon = new ImageIcon(photoPath);
+            Image originalImage = photoIcon.getImage();
+            int originalWidth = originalImage.getWidth(null);
+            int originalHeight = originalImage.getHeight(null);
+            int maxWidth = 400;
+            int maxHeight = 300;
+
+            int newWidth = originalWidth;
+            int newHeight = originalHeight;
+
+            if (originalWidth > maxWidth) {
+                newWidth = maxWidth;
+                newHeight = (newWidth * originalHeight) / originalWidth;
+            }
+
+            if (newHeight > maxHeight) {
+                newHeight = maxHeight;
+                newWidth = (newHeight * originalWidth) / originalHeight;
+            }
+
+            Image scaledImage = originalImage.getScaledInstance(newWidth, newHeight, Image.SCALE_SMOOTH);
+            JLabel photoLabel = new JLabel(new ImageIcon(scaledImage));
+            dialog.add(photoLabel, BorderLayout.NORTH);
+            dialog.setSize(newWidth + 50, newHeight + 200);
+        } else {
+            dialog.setSize(300, 200);
+        }
 
         JButton closeButton = createStyledButton("Закрыть");
         closeButton.addActionListener(new ActionListener() {

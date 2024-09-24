@@ -1,4 +1,4 @@
-class Samolyot {
+public class Samolyot {
     private String marka;
     private String model;
     private int maxSkorost;
@@ -16,7 +16,7 @@ class Samolyot {
     }
 
     public String informatsiya() {
-        return String.format("Марка: %s\nМодель: %s\nМаксимальная скорость: %d км/ч\nМаксимальная высота: %d м\nСтоимость: %.2f",
+        return String.format("Марка: %s\nМодель: %s\nМаксимальная скорость: %d км/ч\nМаксимальная высота: %d м\nСтоимость: %.0f руб",
                 marka, model, maxSkorost, maxVysota, stoimost());
     }
 }
