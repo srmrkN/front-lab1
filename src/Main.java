@@ -6,9 +6,11 @@ import java.awt.event.ActionListener;
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.List;
+import java.util.ArrayList;
 
 public class Main {
-    private static Map<String, String> photoMap = new HashMap<>();
+    private static Map<String, List<String>> photoMap = new HashMap<>();
 
     public static void main(String[] args) {
         JFrame frame = new JFrame("Информация о самолетах");
@@ -85,7 +87,9 @@ public class Main {
                     int result = fileChooser.showOpenDialog(frame);
                     if (result == JFileChooser.APPROVE_OPTION) {
                         File selectedFile = fileChooser.getSelectedFile();
-                        photoMap.put(selectedModel, selectedFile.getAbsolutePath());
+                        List<String> photos = photoMap.getOrDefault(selectedModel, new ArrayList<>());
+                        photos.add(selectedFile.getAbsolutePath());
+                        photoMap.put(selectedModel, photos);
                     }
                 }
             }
@@ -171,7 +175,7 @@ public class Main {
         }
     }
 
-    private static void showInfoDialog(JFrame parent, String info, String photoPath) {
+    private static void showInfoDialog(JFrame parent, String info, List<String> photoPaths) {
         JDialog dialog = new JDialog(parent, "Информация", true);
         dialog.setLayout(new BorderLayout());
 
@@ -179,34 +183,38 @@ public class Main {
         textArea.setEditable(false);
         dialog.add(new JScrollPane(textArea), BorderLayout.CENTER);
 
-        if (photoPath != null) {
-            ImageIcon photoIcon = new ImageIcon(photoPath);
-            Image originalImage = photoIcon.getImage();
-            int originalWidth = originalImage.getWidth(null);
-            int originalHeight = originalImage.getHeight(null);
-            int maxWidth = 400;
-            int maxHeight = 300;
+        JPanel photoPanel = new JPanel(new GridLayout(0, 2, 10, 10)); // Динамическое количество строк, 2 столбца
+        if (photoPaths != null) {
+            for (String photoPath : photoPaths) {
+                ImageIcon photoIcon = new ImageIcon(photoPath);
+                Image originalImage = photoIcon.getImage();
+                int originalWidth = originalImage.getWidth(null);
+                int originalHeight = originalImage.getHeight(null);
+                int maxWidth = 200;
+                int maxHeight = 150;
 
-            int newWidth = originalWidth;
-            int newHeight = originalHeight;
+                int newWidth = originalWidth;
+                int newHeight = originalHeight;
 
-            if (originalWidth > maxWidth) {
-                newWidth = maxWidth;
-                newHeight = (newWidth * originalHeight) / originalWidth;
+                if (originalWidth > maxWidth) {
+                    newWidth = maxWidth;
+                    newHeight = (newWidth * originalHeight) / originalWidth;
+                }
+
+                if (newHeight > maxHeight) {
+                    newHeight = maxHeight;
+                    newWidth = (newHeight * originalWidth) / originalHeight;
+                }
+
+                Image scaledImage = originalImage.getScaledInstance(newWidth, newHeight, Image.SCALE_SMOOTH);
+                JLabel photoLabel = new JLabel(new ImageIcon(scaledImage));
+                photoPanel.add(photoLabel);
             }
-
-            if (newHeight > maxHeight) {
-                newHeight = maxHeight;
-                newWidth = (newHeight * originalWidth) / originalHeight;
-            }
-
-            Image scaledImage = originalImage.getScaledInstance(newWidth, newHeight, Image.SCALE_SMOOTH);
-            JLabel photoLabel = new JLabel(new ImageIcon(scaledImage));
-            dialog.add(photoLabel, BorderLayout.NORTH);
-            dialog.setSize(newWidth + 50, newHeight + 200);
-        } else {
-            dialog.setSize(300, 200);
         }
+
+        JScrollPane scrollPane = new JScrollPane(photoPanel);
+        dialog.add(scrollPane, BorderLayout.NORTH);
+        dialog.setSize(500, 400);
 
         JButton closeButton = createStyledButton("Закрыть");
         closeButton.addActionListener(new ActionListener() {
